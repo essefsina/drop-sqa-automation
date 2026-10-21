@@ -8,7 +8,7 @@ Feature: Uploading files
 
   Scenario: 39 - Upload response lists the saved file
     When I upload a text file named "qa-upload-39.txt" with content "saved list check"
-    Then the upload response lists 1 saved file(s)
+    Then the upload response lists 1 saved files
 
   Scenario: 40 - Uploaded file appears in the file list
     When I upload a text file named "qa-upload-40.txt" with content "listed after upload"
@@ -55,7 +55,7 @@ Feature: Uploading files
   Scenario: 49 - Two files in one upload request are both saved
     When I upload two text files named "qa-multi-a.txt" and "qa-multi-b.txt" in one request
     Then the response status is 200
-    And the upload response lists 2 saved file(s)
+    And the upload response lists 2 saved files
 
   Scenario: 50 - Upload without multipart data is rejected
     When I POST plain text "not a file" to "/api/upload"

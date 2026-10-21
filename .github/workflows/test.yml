@@ -32,9 +32,18 @@ jobs:
       - name: Install light Python deps (DropIt core itself is stdlib-only)
         run: pip install numpy pillow
 
+      - name: Assemble DropIt in its shipped flat layout
+        # The product ships as one flat folder (code + icon + models side by
+        # side); the repo splits src/ and assets/, which is not how the app
+        # runs. Test what users actually run.
+        run: |
+          mkdir -p dropit-flat
+          cp dropit-server/src/*.py dropit-flat/
+          cp dropit-server/assets/icon.png dropit-flat/
+
       - name: Run the 100 Cucumber use cases
         env:
-          DROPIT_PY: ${{ github.workspace }}/dropit-server/src/dropit.py
+          DROPIT_PY: ${{ github.workspace }}/dropit-flat/dropit.py
         run: mvn -B test
 
       - name: Upload Cucumber report

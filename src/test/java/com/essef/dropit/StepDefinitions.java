@@ -31,12 +31,15 @@ public class StepDefinitions {
 
     @When("I GET {string}")
     public void iGet(String path) {
-        world.last = RestAssured.get(path);
+        // urlEncoding disabled: feature paths carry their own %XX escapes
+        // (e.g. hello%2Etxt) and must reach the server byte-for-byte.
+        world.last = RestAssured.given().urlEncodingEnabled(false).get(path);
     }
 
     @When("I GET {string} with range {string}")
     public void iGetWithRange(String path, String range) {
-        world.last = RestAssured.given().header("Range", range).get(path);
+        world.last = RestAssured.given().urlEncodingEnabled(false)
+                .header("Range", range).get(path);
     }
 
     @When("I POST raw JSON {string} to {string}")
@@ -166,12 +169,42 @@ public class StepDefinitions {
 
     // ------------------------------------------------------------- upload
 
-    @When("I upload a text file named {string} with content {string}")
-    public void uploadTextFile(String name, String content) {
+    // Multipart bodies are built by hand: RestAssured's multiPart sends a
+    // chunked body with no Content-Length, and DropIt's stdlib handler
+    // rejects uploads whose Content-Length it cannot read (400 bad request).
+    // A byte[] body has a known length, exactly like a browser form post.
+    private record Part(String filename, byte[] content, String contentType) {
+    }
+
+    private static final String BOUNDARY = "DropItQABoundary7d1a9";
+
+    private void postUpload(List<Part> parts) {
+        java.io.ByteArrayOutputStream body = new java.io.ByteArrayOutputStream();
+        try {
+            for (Part p : parts) {
+                body.write(("--" + BOUNDARY + "\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                body.write(("Content-Disposition: form-data; name=\"file\"; filename=\""
+                        + p.filename() + "\"\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                body.write(("Content-Type: " + p.contentType() + "\r\n\r\n")
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                body.write(p.content());
+                body.write("\r\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            body.write(("--" + BOUNDARY + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
         world.last = RestAssured.given()
-                .multiPart("file", name, content.getBytes(java.nio.charset.StandardCharsets.UTF_8), "text/plain")
+                .contentType("multipart/form-data; boundary=" + BOUNDARY)
+                .body(body.toByteArray())
                 .post("/api/upload");
         rememberSavedNames();
+    }
+
+    @When("I upload a text file named {string} with content {string}")
+    public void uploadTextFile(String name, String content) {
+        postUpload(List.of(new Part(name,
+                content.getBytes(java.nio.charset.StandardCharsets.UTF_8), "text/plain")));
     }
 
     @When("I upload a binary file named {string} with {int} bytes")
@@ -180,19 +213,14 @@ public class StepDefinitions {
         for (int i = 0; i < bytes; i++) {
             data[i] = (byte) (i % 251);
         }
-        world.last = RestAssured.given()
-                .multiPart("file", name, data, "application/octet-stream")
-                .post("/api/upload");
-        rememberSavedNames();
+        postUpload(List.of(new Part(name, data, "application/octet-stream")));
     }
 
     @When("I upload two text files named {string} and {string} in one request")
     public void uploadTwoFiles(String a, String b) {
-        world.last = RestAssured.given()
-                .multiPart("file", a, ("content of " + a).getBytes(java.nio.charset.StandardCharsets.UTF_8), "text/plain")
-                .multiPart("file", b, ("content of " + b).getBytes(java.nio.charset.StandardCharsets.UTF_8), "text/plain")
-                .post("/api/upload");
-        rememberSavedNames();
+        postUpload(List.of(
+                new Part(a, ("content of " + a).getBytes(java.nio.charset.StandardCharsets.UTF_8), "text/plain"),
+                new Part(b, ("content of " + b).getBytes(java.nio.charset.StandardCharsets.UTF_8), "text/plain")));
     }
 
     private void rememberSavedNames() {
@@ -210,7 +238,7 @@ public class StepDefinitions {
         }
     }
 
-    @Then("the upload response lists {int} saved file(s)")
+    @Then("the upload response lists {int} saved files")
     public void uploadSavedCount(int n) {
         assertThat(world.last.jsonPath().getList("saved")).hasSize(n);
     }
@@ -231,9 +259,9 @@ public class StepDefinitions {
     @Then("uploading the same name again saves a different name")
     public void uploadingSameNameAgainGivesDifferentName() {
         String first = world.lastUploadedName;
-        Response r = RestAssured.given()
-                .multiPart("file", first, "second copy".getBytes(java.nio.charset.StandardCharsets.UTF_8), "text/plain")
-                .post("/api/upload");
+        postUpload(List.of(new Part(first,
+                "second copy".getBytes(java.nio.charset.StandardCharsets.UTF_8), "text/plain")));
+        Response r = world.last;
         assertThat(r.statusCode()).isEqualTo(200);
         List<String> saved = r.jsonPath().getList("saved");
         assertThat(saved).hasSize(1);
