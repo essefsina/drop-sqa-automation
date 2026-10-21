@@ -92,17 +92,17 @@ public class StepDefinitions {
 
     @Then("the JSON field {string} is a number")
     public void jsonFieldIsNumber(String field) {
-        assertThat(world.last.jsonPath().get(field)).isInstanceOf(Number.class);
+        assertThat((Object) world.last.jsonPath().get(field)).isInstanceOf(Number.class);
     }
 
     @Then("the JSON field {string} is a list")
     public void jsonFieldIsList(String field) {
-        assertThat(world.last.jsonPath().get(field)).isInstanceOf(List.class);
+        assertThat((Object) world.last.jsonPath().get(field)).isInstanceOf(List.class);
     }
 
     @Then("the JSON field {string} is present")
     public void jsonFieldPresent(String field) {
-        assertThat(world.last.jsonPath().get(field)).isNotNull();
+        assertThat((Object) world.last.jsonPath().get(field)).isNotNull();
     }
 
     // ------------------------------------------------------------- homepage
