@@ -1,4 +1,4 @@
-package com.essef.dropit;
+package com.essef.drop;
 
 import io.cucumber.java.After;
 import io.cucumber.java.Before;

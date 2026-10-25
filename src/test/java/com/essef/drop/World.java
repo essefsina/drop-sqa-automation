@@ -1,4 +1,4 @@
-package com.essef.dropit;
+package com.essef.drop;
 
 import io.restassured.response.Response;
 

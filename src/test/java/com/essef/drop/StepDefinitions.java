@@ -1,4 +1,4 @@
-package com.essef.dropit;
+package com.essef.drop;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;

@@ -1,4 +1,4 @@
-package com.essef.dropit;
+package com.essef.drop;
 
 import org.junit.platform.suite.api.ConfigurationParameter;
 import org.junit.platform.suite.api.IncludeEngines;

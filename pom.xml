@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.essef</groupId>
-    <artifactId>dropit-sqa-automation</artifactId>
+    <artifactId>drop-sqa-automation</artifactId>
     <version>1.0.0</version>
     <name>DropIt SQA Automation</name>
     <description>100 Cucumber use cases (Java + RestAssured) that test a real, running DropIt server over HTTP.</description>
